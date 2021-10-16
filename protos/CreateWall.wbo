@@ -1,0 +1,5 @@
+#VRML_OBJ R2021b utf8
+CreateWall {
+  translation -3.16665 -3.11701e-05 4.72729
+  rotation 0 1 0 1.5708
+}

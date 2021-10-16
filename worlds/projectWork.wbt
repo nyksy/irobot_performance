@@ -1,0 +1,63 @@
+#VRML_SIM R2021b utf8
+WorldInfo {
+  coordinateSystem "NUE"
+}
+Viewpoint {
+  orientation -0.8420462368725417 0.4657706143518691 0.2720585778377035 1.1901728720694391
+  position 5.9725279872371955 17.624970962737518 9.527494132590412
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+DEF IROBOT_CREATE Create {
+  translation -0.0193578 0.0899546 3.69248
+  rotation -5.2210090015212816e-09 0.6964978668000195 0.7175588627722623 0
+}
+CreateWall {
+  translation -3.16665 -3.11701e-05 4.72729
+  rotation 0 1 0 1.5708
+}
+Robot {
+  children [
+    Shape {
+      appearance Parquetry {
+        textureTransform TextureTransform {
+          scale 7 7
+        }
+      }
+      geometry Plane {
+        size 10 10
+      }
+    }
+    Display {
+      translation 0 0.01 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              url [
+                "textures/dirty.jpg"
+              ]
+            }
+            transparency 0.9
+            roughness 0.5
+            metalness 0
+          }
+          geometry Plane {
+            size 9.9 9.9
+          }
+        }
+      ]
+      name "ground_display"
+      width 512
+      height 512
+    }
+  ]
+  boundingObject Plane {
+    size 9.9 9.9
+  }
+  locked TRUE
+  controller "ground"
+  supervisor TRUE
+}

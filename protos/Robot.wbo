@@ -1,0 +1,44 @@
+#VRML_OBJ R2021b utf8
+Robot {
+  children [
+    Shape {
+      appearance Parquetry {
+        textureTransform TextureTransform {
+          scale 7 7
+        }
+      }
+      geometry Plane {
+        size 10 10
+      }
+    }
+    Display {
+      translation 0 0.01 0
+      children [
+        Shape {
+          appearance PBRAppearance {
+            baseColorMap ImageTexture {
+              url [
+                "https://raw.githubusercontent.com/cyberbotics/webots/R2021b/projects/robots/irobot/create/worlds/textures/dirty.jpg"
+              ]
+            }
+            transparency 0.9
+            roughness 0.5
+            metalness 0
+          }
+          geometry Plane {
+            size 9.9 9.9
+          }
+        }
+      ]
+      name "ground_display"
+      width 512
+      height 512
+    }
+  ]
+  boundingObject Plane {
+    size 9.9 9.9
+  }
+  locked TRUE
+  controller "ground"
+  supervisor TRUE
+}
