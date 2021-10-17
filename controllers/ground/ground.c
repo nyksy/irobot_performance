@@ -34,8 +34,8 @@
 #define Z 2
 
 // size of the ground
-#define GROUND_X 9.9
-#define GROUND_Z 9.9
+#define GROUND_X 4.9
+#define GROUND_Z 4.9
 
 // main function
 int main() {
@@ -67,7 +67,7 @@ int main() {
 
     // display the robot position
     wb_display_fill_oval(display, width * (translation[X] + GROUND_X / 2) / GROUND_X,
-                         height * (translation[Z] + GROUND_Z / 2) / GROUND_Z, 7, 7);
+                         height * (translation[Z] + GROUND_Z / 2) / GROUND_Z, 14, 14);
   }
 
   wb_robot_cleanup();
