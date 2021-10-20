@@ -4,7 +4,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation -0.8607385528751302 0.43470453089006444 0.26487943373934386 1.2086604517044552
-  position 4.635224808654635 15.728276688861897 7.1430893554644355
+  position 4.298652818172029 14.586944414697165 6.624416820299613
   follow "Create"
 }
 TexturedBackground {
@@ -14,6 +14,7 @@ TexturedBackgroundLight {
 DEF IROBOT_CREATE Create {
   translation -0.0193578 0.0899546 0.11248
   rotation -5.2210090015212816e-09 0.6964978668000195 0.7175588627722623 0
+  controller "create_avoid_obstacles_java"
 }
 CreateWall {
   translation -3.16665 -3.11701e-05 4.72729

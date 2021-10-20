@@ -2,6 +2,8 @@
 
 ![roomba](./media/roomba.png)
 
+## Kehitysympäristön pystytys
+
 Kuinka todennäköisesti saada 'world' avattua Webots-ympäristössä
 
 * kloonaa repositorio haluttuun osoitteeseen

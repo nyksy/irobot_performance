@@ -1,0 +1,8 @@
+/.vscode
+/controllers/.gradle
+/controllers/.idea
+/controllers/build.gradle
+/controllers/gradlew
+/controllers/gradlew.bat
+/controllers/gradle
+/controllers/settings.gradle
