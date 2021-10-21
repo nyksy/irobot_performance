@@ -6,3 +6,4 @@
 /controllers/gradlew.bat
 /controllers/gradle
 /controllers/settings.gradle
+/controllers/**/build
