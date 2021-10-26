@@ -19,6 +19,7 @@ DEF IROBOT_CREATE Create {
 CreateWall {
   translation -3.16665 -3.11701e-05 4.72729
   rotation 0 1 0 1.5708
+  controller "create_wall_emit_signal_java"
 }
 Robot {
   children [
