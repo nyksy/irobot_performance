@@ -62,7 +62,7 @@ Robot {
     size 4.9 4.9
   }
   locked TRUE
-  controller "ground"
+  controller "Ground_java"
   supervisor TRUE
   cpuConsumption 40
 }
