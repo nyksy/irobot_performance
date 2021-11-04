@@ -3,8 +3,8 @@ WorldInfo {
   coordinateSystem "NUE"
 }
 Viewpoint {
-  orientation -0.8607385528751302 0.43470453089006444 0.26487943373934386 1.2086604517044552
-  position 4.298652818172029 14.586944414697165 6.624416820299613
+  orientation -0.8295817379352789 0.49786610594348507 0.2528309329116052 1.074028744516446
+  position 3.3582692686096087 9.4533735602921 6.251653837554626
   follow "Create"
 }
 TexturedBackground {
@@ -12,13 +12,11 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 DEF IROBOT_CREATE Create {
-  translation -0.0193578 0.0899546 0.11248
-  rotation -5.2210090015212816e-09 0.6964978668000195 0.7175588627722623 0
-  controller "create_avoid_obstacles_java"
+  controller "Create_avoid_obstacles_ver2"
 }
 CreateWall {
-  translation -3.16665 -3.11701e-05 4.72729
-  rotation 0 1 0 1.5708
+  translation -3.16665 -7.8479999963528e-05 4.72729
+  rotation -1.2104707982374531e-17 1 -5.1289322214220817e-17 1.5708000000000002
   controller "create_wall_emit_signal_java"
 }
 Robot {
