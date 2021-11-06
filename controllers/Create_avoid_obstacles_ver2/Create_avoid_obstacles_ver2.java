@@ -6,7 +6,6 @@
 
 import com.cyberbotics.webots.controller.*;
 
-import java.util.Arrays;
 import java.util.Random;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
@@ -152,9 +151,13 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 goForward();
             }
 
+            //Loggailut
+            System.out.println("---");
+            System.out.println("LOG");
             //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
+            System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
             //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
-            System.out.println("Bearing: " + getBearingInDegrees());
+            System.out.println("Bearing: " + Math.round(getBearingInDegrees()) + " °");
 
             fflushIrReceiver();
             step(getTimeStep());
@@ -224,12 +227,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     }
 
     public Double randdouble() {
-        //TODO
         return new Random().nextDouble();
     }
 
     /**
      * Kompassin palauttama arvo asteiksi
+     *
      * @return robot's bearing in degrees
      */
     public Double getBearingInDegrees() {
@@ -242,7 +245,6 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         }
         return bearing;
     }
-
 
 
     public void turn(Double angle) {
