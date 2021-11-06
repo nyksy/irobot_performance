@@ -7,3 +7,6 @@
 /controllers/gradle
 /controllers/settings.gradle
 /controllers/**/build
+/controllers/.settings
+/controllers/.project
+/controllers/.classpath

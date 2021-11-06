@@ -4,14 +4,9 @@
 // Author:
 // Modifications:
 
-import com.cyberbotics.webots.controller.Robot;
-import com.cyberbotics.webots.controller.DistanceSensor;
-import com.cyberbotics.webots.controller.LED;
-import com.cyberbotics.webots.controller.Motor;
-import com.cyberbotics.webots.controller.PositionSensor;
-import com.cyberbotics.webots.controller.Receiver;
-import com.cyberbotics.webots.controller.TouchSensor;
+import com.cyberbotics.webots.controller.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
@@ -64,6 +59,11 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
     static Create_avoid_obstacles_ver2 robot;
 
+    //additional bodyslot utilities
+    private final Camera camera = getCamera("camera");
+    private final GPS gps = getGPS("gps");
+    private final Compass compass = getCompass("compass");
+
     /**
      * Constructor
      */
@@ -88,6 +88,17 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         //receiver
         receiver.enable(getTimeStep());
 
+        //camera
+        camera.enable(getTimeStep());
+
+        //gps
+        //https://cyberbotics.com/doc/reference/gps?tab-language=java
+        gps.enable(getTimeStep());
+
+        //compass
+        //https://cyberbotics.com/doc/reference/compass?tab-language=java
+        compass.enable(getTimeStep());
+
         //leds
         for (int i = 0; i < leds.length; i++) {
             leds[i] = getLED(leds_name[i]);
@@ -111,12 +122,14 @@ public class Create_avoid_obstacles_ver2 extends Robot {
      */
     public void run() {
 
+        System.out.println("Robot: " + robot.getModel());
+
         leds[LED_ON].set(1);
 
         passiveWait(0.5);
 
         //lähetääs ajelee
-        while (true) {
+        while (1 == 1) {
             if (isThereAVirtualWall()) {
                 System.out.println("Virtual wall detected");
             } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
@@ -138,6 +151,11 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             } else {
                 goForward();
             }
+
+            //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
+            //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
+            System.out.println("Bearing: " + getBearingInDegrees());
+
             fflushIrReceiver();
             step(getTimeStep());
         }
@@ -210,8 +228,25 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         return new Random().nextDouble();
     }
 
+    /**
+     * Kompassin palauttama arvo asteiksi
+     * @return robot's bearing in degrees
+     */
+    public Double getBearingInDegrees() {
+        double[] north = compass.getValues();
+        double rad = Math.atan2(north[0], north[2]);
+        double bearing = (rad - 1.5708) / Math.PI * 180.0;
+
+        if (bearing < 0.0) {
+            bearing += 360.0;
+        }
+        return bearing;
+    }
+
+
+
     public void turn(Double angle) {
-        System.out.println("Turn angle: "+Math.round(angle/Math.PI*180)+" degrees.");
+        System.out.println("Turn angle: " + Math.round(angle / Math.PI * 180) + " degrees.");
 
         stop();
         double lOffset = positionSensors[POS_SENSOR_LEFT].getValue();

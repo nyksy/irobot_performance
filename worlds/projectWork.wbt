@@ -3,8 +3,8 @@ WorldInfo {
   coordinateSystem "NUE"
 }
 Viewpoint {
-  orientation -0.8295817379352789 0.49786610594348507 0.2528309329116052 1.074028744516446
-  position 3.3582692686096087 9.4533735602921 6.251653837554626
+  orientation -0.4072945768302832 0.8747282610733207 0.2626054016281555 1.2126181447797901
+  position 8.476619786107495 6.192944410733891 4.470055968300159
   follow "Create"
 }
 TexturedBackground {
@@ -13,6 +13,15 @@ TexturedBackgroundLight {
 }
 DEF IROBOT_CREATE Create {
   controller "Create_avoid_obstacles_ver2"
+  bodySlot [
+    Compass {
+    }
+    GPS {
+    }
+    Camera {
+      translation 0 0.2 0
+    }
+  ]
 }
 CreateWall {
   translation -3.16665 -7.8479999963528e-05 4.72729
