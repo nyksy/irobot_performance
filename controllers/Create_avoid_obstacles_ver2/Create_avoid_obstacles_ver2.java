@@ -152,13 +152,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             }
 
             //Loggailut
-            System.out.println("---");
-            System.out.println("LOG");
+            //System.out.println("---");
+            //System.out.println("LOG");
             //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
-            System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
+            //System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
             //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
-            System.out.println("Bearing: " + Math.round(getBearingInDegrees()) + " °");
-
+            //System.out.println("Bearing: " + Math.round(getBearingInDegrees()) + " °");
             fflushIrReceiver();
             step(getTimeStep());
         }
