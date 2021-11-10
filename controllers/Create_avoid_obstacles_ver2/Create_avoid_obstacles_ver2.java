@@ -6,6 +6,7 @@
 
 import com.cyberbotics.webots.controller.*;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
@@ -62,6 +63,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     private final Camera camera = getCamera("camera");
     private final GPS gps = getGPS("gps");
     private final Compass compass = getCompass("compass");
+
+    private final TableMap tableMap = new TableMap();
 
     /**
      * Constructor
@@ -129,10 +132,15 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
         //lähetääs ajelee
         while (1 == 1) {
+
+            tableMap.addLocation(getGPSLocation());  // Päivitetään taulukko.
+
             if (isThereAVirtualWall()) {
                 System.out.println("Virtual wall detected");
             } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
                 System.out.println("Left obstacle detected");
+                System.out.println(tableMap);
+
                 goBackward();
                 passiveWait(0.5);
 
@@ -141,6 +149,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
                 System.out.println("Right obstacle detected");
+                System.out.println(tableMap);
+
                 goBackward();
                 passiveWait(0.5);
 
@@ -245,6 +255,17 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         return bearing;
     }
 
+    /**
+     * 3D-koordinaateista 2D-koordinaatit.
+     *
+     * @return 2D coordinates
+     */
+    public double[] getGPSLocation () {
+        double[] temp = gps.getValues();
+        double[] ret = {temp[0], temp[2]};
+        return ret;
+    }
+
 
     public void turn(Double angle) {
         System.out.println("Turn angle: " + Math.round(angle / Math.PI * 180) + " degrees.");
@@ -284,7 +305,89 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         // create the Robot instance.
         robot = new Create_avoid_obstacles_ver2();
 
+        System.out.println(robot.tableMap);
+
         // Main loop
         robot.run();
     }
+
+
+    /**
+     * Sisäluokka TableMap, jolla pidetään kirjaa siivotusta alueesta.
+     */
+    class TableMap {
+
+        private double x0 = 2.5;
+        private double y0 = 2.5;
+
+        private short[][] table = new short[50][50];
+
+        /**
+         * Konstuktori
+         * Täytetään taulukko nollilla.
+         */
+        public TableMap() {
+            for (int i = 0; i < table.length; ++i) {
+                for (int j = 0; j < table[i].length; ++j) {
+                    table[i][j] = 0;
+                }
+            }
+        }
+
+
+        /**
+         * Lisätään koordinaattien mukainen sijainti taulukoon.
+         *
+         * @param coords
+         */
+        public void addLocation(double[] coords) {
+
+            double x = coords[0];
+            double y = coords[1];
+
+            int i = (int) Math.round((y0 + y) * 10);
+            int j = (int) Math.round((x0 + x) * 10);
+
+
+            // Asetetaan arvo ykköseksi ko. ruudussa ja viereisissä ruuduissa.
+
+            table[i][j] = 1;
+
+            if (i-1 >= 0) {
+                table[i - 1][j] = 1;
+                if (j-1 >= 0)
+                    table[i-1][j-1] = 1;
+            }
+
+            if (i+1 < table.length) {
+                table[i+1][j] = 1;
+                if (j+1 < table[i+1].length)
+                    table[i+1][j+1] = 1;
+            }
+
+        }
+
+
+        /**
+         * Taulukon tulostus merkkijonoksi.
+         *
+         * @return s
+         */
+        public String toString() {
+            String s = new String();
+
+            for (int i = 0; i < table.length; ++i) {
+                for (int j = 0; j < table[i].length; ++j) {
+                    s += table[i][j] + " ";
+                }
+                s += "\n";  // rivinvaihto
+            }
+
+            return s;
+
+        }
+
+
+    }
+
 }

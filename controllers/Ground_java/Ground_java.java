@@ -55,11 +55,14 @@ public class Ground_java {
         while (supervisor.step(TIME_STEP) != -1) {
 
             //TODO sijainnin ja nopeuden ym. kirjaaminen csv-tiedostoon
+            
+            /*
             System.out.println("---");
             System.out.println("LOG");
             System.out.println("Velocity vector: " + Arrays.toString(mybot.getVelocity()));
             System.out.println("Velocity: " + getVelocityFromVector(mybot.getVelocity()));
             System.out.println("Translation: " + Arrays.toString(translationField.getSFVec3f()));
+            */
 
             // Update the translation field
             double[] translation = translationField.getSFVec3f();
