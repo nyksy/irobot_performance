@@ -141,6 +141,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 System.out.println("Left obstacle detected");
                 System.out.println(tableMap);
                 System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
+                System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
 
                 goBackward();
                 passiveWait(0.5);
@@ -151,7 +152,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
                 System.out.println("Right obstacle detected");
                 System.out.println(tableMap);
-                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
+                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
+                System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
 
                 goBackward();
                 passiveWait(0.5);
@@ -320,6 +322,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
         private double x0 = 2.5;
         private double y0 = 2.5;
+        private double currentProgress = 0;
+        private double previousProgress = 0;
 
         private int modCount = 0;
 
@@ -392,7 +396,19 @@ public class Create_avoid_obstacles_ver2 extends Robot {
          * @return alueesta puhdistettu prosentteina
          */
         public String getCleaningPercentage() {
-            return String.format("%.2f", ((double) modCount / (50 * 50)) * 100);
+            previousProgress = currentProgress;
+            currentProgress = ((double) modCount / (50 * 50)) * 100;
+            return String.format("%.2f", currentProgress);
+        }
+
+        /**
+         * Kuinka paljon muutosta aiemmin tarkistettuun puhdistustasoon
+         * TODO aikavälin huomioiminen muutosta laskettaessa
+         *
+         * @return muutos
+         */
+        public String getChange() {
+            return String.format("%.2f", currentProgress - previousProgress);
         }
 
 
