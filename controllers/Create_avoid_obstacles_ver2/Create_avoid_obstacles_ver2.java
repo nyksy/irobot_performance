@@ -6,8 +6,7 @@
 
 import com.cyberbotics.webots.controller.*;
 
-import java.util.Arrays;
-import java.util.Random;
+import java.util.*;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
 
@@ -25,7 +24,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     static final int CLIFF_SENSOR_FRONT_RIGHT = 2;
     static final int CLIFF_SENSOR_RIGHT = 3;
 
-    final DistanceSensor[] cliffSensors = new DistanceSensor[4];
+    final DistanceSensor[] cliffSensors = new DistanceSensor[CLIFF_SENSORS_NUMBER];
     static final String[] cliff_sensors_name = new String[]
             {
                     "cliff_left", "cliff_front_left", "cliff_front_right", "cliff_right"
@@ -142,6 +141,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 System.out.println(tableMap);
                 System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
                 System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
+                System.out.println("Lähin likainen alue löytyy indeksistä: " +
+                        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
 
                 goBackward();
                 passiveWait(0.5);
@@ -154,7 +155,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 System.out.println(tableMap);
                 System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
                 System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-
+                System.out.println("Lähin likainen alue löytyy indeksistä: " +
+                        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
                 goBackward();
                 passiveWait(0.5);
 
@@ -409,6 +411,56 @@ public class Create_avoid_obstacles_ver2 extends Robot {
          */
         public String getChange() {
             return String.format("%.2f", currentProgress - previousProgress);
+        }
+
+        /**
+         * Etsitään lähimmän likaisen ruudun indeksi
+         * TODO tätä voisi tehostaa lähtemällä etsimään likaisia alueita robotin välittömästä läheisyydestä
+         *
+         * @param coords robotin nykyiset koordinaatit
+         * @return lähimmän likaisen ruudun indeksi
+         */
+        public int[] getClosestZero(double[] coords) {
+
+            Double minDist = null;
+            int[] index = new int[2];
+
+            //etsitään likaiset alueet
+            for (int i = 0; i < table.length; ++i) {
+                for (int j = 0; j < table[i].length; ++j) {
+                    if (table[i][j] == 0) {
+                        double tmp = calculateEuclideanDistance(coords, j, i);
+
+                        if (minDist == null || tmp < minDist) {
+                            minDist = tmp;
+                            index[0] = i;
+                            index[1] = j;
+                        }
+                    }
+                }
+            }
+            return index;
+        }
+
+        /**
+         * Lasketaan "euclidean distance" kahden taulukossa olevan indeksin välillä
+         *
+         * @param coords robotin koordinaatit
+         * @param x2     vertailtava x-koordinaatti
+         * @param y2     vertailtava y-koordinaatti
+         * @return indeksi, jossa lähin 0.
+         */
+        public double calculateEuclideanDistance(double[] coords, int x2, int y2) {
+            //robotin indeksi
+            int x1 = (int) Math.round((x0 + coords[0]) * 10);
+            int y1 = (int) Math.round((y0 + coords[1]) * 10);
+
+            //etäisyydet x- ja y-akseleilla
+            double ac = Math.abs(y2 - y1);
+            double cb = Math.abs(x2 - x1);
+
+            //euklidinen etäisyys
+            return Math.hypot(ac, cb);
         }
 
 
