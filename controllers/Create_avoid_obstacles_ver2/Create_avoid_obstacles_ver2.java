@@ -140,6 +140,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
                 System.out.println("Left obstacle detected");
                 System.out.println(tableMap);
+                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
 
                 goBackward();
                 passiveWait(0.5);
@@ -150,6 +151,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
                 System.out.println("Right obstacle detected");
                 System.out.println(tableMap);
+                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
 
                 goBackward();
                 passiveWait(0.5);
@@ -260,10 +262,9 @@ public class Create_avoid_obstacles_ver2 extends Robot {
      *
      * @return 2D coordinates
      */
-    public double[] getGPSLocation () {
+    public double[] getGPSLocation() {
         double[] temp = gps.getValues();
-        double[] ret = {temp[0], temp[2]};
-        return ret;
+        return new double[]{temp[0], temp[2]};
     }
 
 
@@ -315,22 +316,22 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     /**
      * Sisäluokka TableMap, jolla pidetään kirjaa siivotusta alueesta.
      */
-    class TableMap {
+    static class TableMap {
 
         private double x0 = 2.5;
         private double y0 = 2.5;
 
-        private short[][] table = new short[50][50];
+        private int modCount = 0;
+
+        private final short[][] table = new short[50][50];
 
         /**
          * Konstuktori
          * Täytetään taulukko nollilla.
          */
         public TableMap() {
-            for (int i = 0; i < table.length; ++i) {
-                for (int j = 0; j < table[i].length; ++j) {
-                    table[i][j] = 0;
-                }
+            for (short[] shorts : table) {
+                Arrays.fill(shorts, (short) 0);
             }
         }
 
@@ -351,20 +352,47 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             // Asetetaan arvo ykköseksi ko. ruudussa ja viereisissä ruuduissa.
 
-            table[i][j] = 1;
-
-            if (i-1 >= 0) {
-                table[i - 1][j] = 1;
-                if (j-1 >= 0)
-                    table[i-1][j-1] = 1;
+            if (table[i][j] != 1) {
+                table[i][j] = 1;
+                modCount++;
             }
 
-            if (i+1 < table.length) {
-                table[i+1][j] = 1;
-                if (j+1 < table[i+1].length)
-                    table[i+1][j+1] = 1;
+            if (i - 1 >= 0) {
+                //tarkistetaan onko jo 1
+                if (table[i - 1][j] != 1) {
+                    table[i - 1][j] = 1;
+                    modCount++;
+                }
+                if (j - 1 >= 0) {
+                    if (table[i - 1][j - 1] != 1) {
+                        table[i - 1][j - 1] = 1;
+                        modCount++;
+                    }
+                }
             }
 
+            if (i + 1 < table.length) {
+                if (table[i + 1][j] != 1) {
+                    table[i + 1][j] = 1;
+                    modCount++;
+                }
+                if (j + 1 < table[i + 1].length) {
+                    if (table[i + 1][j + 1] != 1) {
+                        table[i + 1][j + 1] = 1;
+                        modCount++;
+                    }
+                }
+            }
+
+        }
+
+        /**
+         * Lasketaan kuinka suuri osa alueesta puhdistettu, (modcount / ruutujen määrä) * 100
+         *
+         * @return alueesta puhdistettu prosentteina
+         */
+        public String getCleaningPercentage() {
+            return String.format("%.2f", ((double) modCount / (50 * 50)) * 100);
         }
 
 
@@ -374,8 +402,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
          * @return s
          */
         public String toString() {
-            String s = new String();
-
+            String s = "";
             for (int i = 0; i < table.length; ++i) {
                 for (int j = 0; j < table[i].length; ++j) {
                     s += table[i][j] + " ";
