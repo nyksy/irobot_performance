@@ -130,7 +130,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         passiveWait(0.5);
 
         //lähetääs ajelee
-        while (1 == 1) {
+        while (tableMap.getCurrentProgress() < 95) {
 
             tableMap.addLocation(getGPSLocation());  // Päivitetään taulukko.
 
@@ -463,6 +463,9 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             return Math.hypot(ac, cb);
         }
 
+        public double getCurrentProgress() {
+            return currentProgress;
+        }
 
         /**
          * Taulukon tulostus merkkijonoksi.
