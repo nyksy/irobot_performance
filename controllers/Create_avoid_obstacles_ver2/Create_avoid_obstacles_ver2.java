@@ -64,6 +64,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     private final Compass compass = getCompass("compass");
 
     private final TableMap tableMap = new TableMap();
+    private int alreadyCleanedCounter = 0;
+
 
     /**
      * Constructor
@@ -132,7 +134,26 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         //lähetääs ajelee
         while (tableMap.getCurrentProgress() < 95) {
 
-            tableMap.addLocation(getGPSLocation());  // Päivitetään taulukko.
+            // Päivitetään siivouskirjanpito
+            boolean alreadyCleaned = tableMap.addLocation(getGPSLocation());
+
+            if (alreadyCleaned)
+                alreadyCleanedCounter++;
+            else
+                alreadyCleanedCounter = 0;
+
+            // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
+            if (alreadyCleanedCounter > 150) {
+                alreadyCleanedCounter = 0;
+
+                // ...otetaan uusi suunta likaa kohti.
+                double direction = tableMap.getDirectionToClosestDirty(getGPSLocation());
+                System.out.println("Otetaan uusi suunta likaa kohti: "+Math.round(direction));
+                turnToDirection(direction);
+
+                continue;
+            }
+
 
             if (isThereAVirtualWall()) {
                 System.out.println("Virtual wall detected");
@@ -141,8 +162,9 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 System.out.println(tableMap);
                 System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
                 System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-                System.out.println("Lähin likainen alue löytyy indeksistä: " +
-                        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+
+                // System.out.println("Lähin likainen alue löytyy indeksistä: " +
+                //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
 
                 goBackward();
                 passiveWait(0.5);
@@ -155,8 +177,10 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 System.out.println(tableMap);
                 System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
                 System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-                System.out.println("Lähin likainen alue löytyy indeksistä: " +
-                        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+
+                // System.out.println("Lähin likainen alue löytyy indeksistä: " +
+                //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+
                 goBackward();
                 passiveWait(0.5);
 
@@ -272,8 +296,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
     }
 
 
+    /**
+     * Kääntää robottia parametrin osoittaman kulman (rad) verran.
+     *
+     * @param angle
+     */
     public void turn(Double angle) {
-        System.out.println("Turn angle: " + Math.round(angle / Math.PI * 180) + " degrees.");
 
         stop();
         double lOffset = positionSensors[POS_SENSOR_LEFT].getValue();
@@ -294,6 +322,32 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         stop();
         step();
     }
+
+
+    /**
+     * Kääntää robotin parametrin osoittamaan suuntaan.
+     *
+     * @param newDir
+     */
+    public void turnToDirection(double newDir) {
+        double presentDir = getBearingInDegrees();
+        double angle = newDir - presentDir;
+
+        if (angle < -180)
+            angle += 360;
+
+        if (angle > 180)
+            angle -= 180;
+
+        System.out.println("Nykyinen kulkusuunta on "+Math.round(presentDir)+" astetta.");
+        System.out.println("Käännös "+ Math.round(angle)+ " astetta.");
+
+        // TODO Korvataan turn-metodin käyttö kompassikäännöksellä, niin saadaan tarkempi.
+        turn(-angle * Math.PI / 180);
+        System.out.println("Uusi kulkusuunta on "+Math.round(getBearingInDegrees())+" astetta.");
+    }
+
+
 
     /**
      * apufunktio timestepille
@@ -346,8 +400,10 @@ public class Create_avoid_obstacles_ver2 extends Robot {
          * Lisätään koordinaattien mukainen sijainti taulukoon.
          *
          * @param coords
+         * @return wasAlreadyCleaned
          */
-        public void addLocation(double[] coords) {
+        public boolean addLocation(double[] coords) {
+            boolean wasAlreadyCleaned = false;
 
             double x = coords[0];
             double y = coords[1];
@@ -362,6 +418,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 table[i][j] = 1;
                 modCount++;
             }
+            else
+                wasAlreadyCleaned = true;
 
             if (i - 1 >= 0) {
                 //tarkistetaan onko jo 1
@@ -390,7 +448,9 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 }
             }
 
+            return wasAlreadyCleaned;
         }
+
 
         /**
          * Lasketaan kuinka suuri osa alueesta puhdistettu, (modcount / ruutujen määrä) * 100
@@ -439,8 +499,43 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     }
                 }
             }
+
             return index;
         }
+
+
+        /**
+         * Lasketaan suuntakulma lähimpään likaiseen ruutuun.
+         *
+         * @param coords
+         * @return
+         */
+        public double getDirectionToClosestDirty(double[] coords) {
+
+            // nykyinen sijainti
+            double x = coords[0];
+            double y = coords[1];
+
+            int i0 = (int) Math.round((y0 + y) * 10);
+            int j0 = (int) Math.round((x0 + x) * 10);
+
+            // lähimmän likaisen ruudun sijainti
+            int[] target = getClosestZero(coords);
+            int i1 = target[0];
+            int j1 = target[1];
+
+            // Lasketaan suunta.
+            double direction = ( -Math.atan2(i0-i1, j1-j0) + Math.PI/2 ) * 180 / Math.PI;
+
+            if (direction < 0)
+                direction += 360;
+
+            System.out.println("Nykyinen indeksi on: ["+i0+", "+j0+"]. " +
+                    "Lähin likainen alue löytyy indeksistä: ["+i1+", "+j1+"].");
+
+            return direction;
+        }
+
 
         /**
          * Lasketaan "euclidean distance" kahden taulukossa olevan indeksin välillä
