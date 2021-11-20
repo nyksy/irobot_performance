@@ -143,7 +143,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 alreadyCleanedCounter = 0;
 
             // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
-            if (alreadyCleanedCounter > 150) {
+            if (alreadyCleanedCounter > 200) {
                 alreadyCleanedCounter = 0;
 
                 // ...otetaan uusi suunta likaa kohti.
@@ -330,20 +330,46 @@ public class Create_avoid_obstacles_ver2 extends Robot {
      * @param newDir
      */
     public void turnToDirection(double newDir) {
-        double presentDir = getBearingInDegrees();
-        double angle = newDir - presentDir;
+        double startDir = getBearingInDegrees();
+        double angle = newDir - startDir;
 
         if (angle < -180)
             angle += 360;
 
         if (angle > 180)
-            angle -= 180;
+            angle -= 360;
 
-        System.out.println("Nykyinen kulkusuunta on "+Math.round(presentDir)+" astetta.");
+        // käännöskulman etumerkki eli käännöksen suunta
+        int sign = 1;
+        if (angle < 0)
+            sign = -1;
+
+        System.out.println("Nykyinen kulkusuunta on "+Math.round(startDir)+" astetta.");
         System.out.println("Käännös "+ Math.round(angle)+ " astetta.");
 
-        // TODO Korvataan turn-metodin käyttö kompassikäännöksellä, niin saadaan tarkempi.
-        turn(-angle * Math.PI / 180);
+        // Tehdään kompassikäännös.
+
+        double turned = 0;
+        stop();
+        step();
+        motors[MOTOR_LEFT].setVelocity(-sign * HALF_SPEED);
+        motors[MOTOR_RIGHT].setVelocity(sign * HALF_SPEED);
+
+        do {
+            step();
+            turned = getBearingInDegrees() - startDir;
+
+            if (turned < -180)
+                turned += 360;
+
+            if (turned > 180)
+                turned -= 360;
+
+        } while (Math.abs(turned) < Math.abs(angle));
+
+        stop();
+        step();
+
         System.out.println("Uusi kulkusuunta on "+Math.round(getBearingInDegrees())+" astetta.");
     }
 
