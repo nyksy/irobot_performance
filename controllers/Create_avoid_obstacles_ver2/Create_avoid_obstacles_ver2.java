@@ -10,6 +10,10 @@ import java.util.*;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
 
+    static State tila = null;
+
+    static final double DEG_90 = Math.PI / 2.0;
+
     //robotin speksit ja vakioita
     static final int BUMPERS_NUMBER = 2;
     static final int BUMPER_LEFT = 0;
@@ -125,11 +129,15 @@ public class Create_avoid_obstacles_ver2 extends Robot {
      */
     public void run() {
 
+        changeState(State.START);
+
         System.out.println("Robot: " + robot.getModel());
 
         leds[LED_ON].set(1);
 
         passiveWait(0.5);
+
+        double dir = 90;
 
         //lähetääs ajelee
         while (tableMap.getCurrentProgress() < 95) {
@@ -141,30 +149,103 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 alreadyCleanedCounter++;
             else
                 alreadyCleanedCounter = 0;
-
+            /*
             // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
             if (alreadyCleanedCounter > 200) {
                 alreadyCleanedCounter = 0;
 
                 // ...otetaan uusi suunta likaa kohti.
                 double direction = tableMap.getDirectionToClosestDirty(getGPSLocation());
-                System.out.println("Otetaan uusi suunta likaa kohti: "+Math.round(direction));
+                System.out.println("Otetaan uusi suunta likaa kohti: " + Math.round(direction));
                 turnToDirection(direction);
 
                 continue;
+            }*/
+
+            switch (tila) {
+                case START: {
+                    if (isThereAVirtualWall()) {
+                        System.out.println("Virtual wall detected");
+
+                    } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
+                        System.out.println("Left obstacle detected");
+                        log();
+                        goBackward();
+                        passiveWait(0.5);
+                        turnToDirection(dir);
+                        changeState(State.EDGES); //muutetaan tila
+
+                    } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
+                        System.out.println("Right obstacle detected");
+                        log();
+                        goBackward();
+                        passiveWait(0.5);
+                        turnToDirection(dir);
+                        changeState(State.EDGES); //muutetaan tila
+                    } else {
+                        goForward();
+                    }
+                    break;
+                }
+                case EDGES: {
+                    if (isThereAVirtualWall()) {
+                        System.out.println("Virtual wall detected");
+                    } else if (isThereACliffAtFrontv2() && isThereACliffAtLeft()) {
+                        log();
+                        if (dir <= 360.0) {
+                            dir += 90;
+                        } else {
+                            goBackward();
+                            passiveWait(0.5);
+                            stop();
+                            changeState(State.CENTER);
+                            break;
+                        }
+                        goBackward();
+                        passiveWait(0.5);
+                        turnToDirection(dir);
+
+                    } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
+                        log();
+                        System.out.println("Left obstacle detected");
+                        goBackward();
+                        passiveWait(0.1);
+                        //turn(-Math.PI / 12);
+                        goForward();
+
+                    } else {
+                        if (dir < 360.0) {
+                            if (getBearingInDegrees() == dir) {
+                                goForward();
+                            } else if (getBearingInDegrees() > dir) {
+                                goSlightlyRight();
+                            } else {
+                                goSlightlyLeft();
+                            }
+                        } else {
+                            //TODO jos siis < 360 tai > 1
+                            goForward();
+                        }
+                    }
+                    break;
+                }
+                case CENTER: {
+                    break;
+                }
+                case SEEK:
+                    break;
+                case DONE:
+                    break;
+                default:
+                    break;
             }
 
-
+            /*
             if (isThereAVirtualWall()) {
                 System.out.println("Virtual wall detected");
             } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
                 System.out.println("Left obstacle detected");
-                System.out.println(tableMap);
-                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + "%");
-                System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-
-                // System.out.println("Lähin likainen alue löytyy indeksistä: " +
-                //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+                log();
 
                 goBackward();
                 passiveWait(0.5);
@@ -174,12 +255,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
                 System.out.println("Right obstacle detected");
-                System.out.println(tableMap);
-                System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
-                System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-
-                // System.out.println("Lähin likainen alue löytyy indeksistä: " +
-                //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+                log();
 
                 goBackward();
                 passiveWait(0.5);
@@ -189,18 +265,39 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             } else {
                 goForward();
-            }
-
-            //Loggailut
-            //System.out.println("---");
-            //System.out.println("LOG");
-            //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
-            //System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
-            //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
-            //System.out.println("Bearing: " + Math.round(getBearingInDegrees()) + " °");
+            }*/
             fflushIrReceiver();
             step(getTimeStep());
         }
+    }
+
+    /**
+     * muutetaan robotin tila
+     *
+     * @param s uusi tila
+     */
+    public static void changeState(State s) {
+        tila = s;
+    }
+
+    /**
+     * Lokitusfunktio
+     */
+    public void log() {
+        //Loggailut
+        System.out.println(tableMap);
+        System.out.println("Tila: " + tila);
+        System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
+        System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
+        System.out.println("Lähin likainen alue löytyy indeksistä: " +
+                Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+        //System.out.println("---");
+        //System.out.println("LOG");
+        System.out.println("Direction: " + getBearingInDegrees());
+        //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
+        //System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
+        //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
+        //System.out.println("Bearing: " + Math.round(getBearingInDegrees()) + " °");
     }
 
     public void step() {
@@ -242,9 +339,24 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 cliffSensors[CLIFF_SENSOR_FRONT_RIGHT].getValue() < 100.0;
     }
 
+    public boolean isThereACliffAtFrontv2() {
+        return cliffSensors[CLIFF_SENSOR_FRONT_LEFT].getValue() < 100.0 &&
+                cliffSensors[CLIFF_SENSOR_FRONT_RIGHT].getValue() < 100.0;
+    }
+
     public void goForward() {
         motors[MOTOR_LEFT].setVelocity(MAX_SPEED);
         motors[MOTOR_RIGHT].setVelocity(MAX_SPEED);
+    }
+
+    public void goSlightlyLeft() {
+        motors[MOTOR_LEFT].setVelocity(MAX_SPEED - 1d);
+        motors[MOTOR_RIGHT].setVelocity(MAX_SPEED);
+    }
+
+    public void goSlightlyRight() {
+        motors[MOTOR_LEFT].setVelocity(MAX_SPEED);
+        motors[MOTOR_RIGHT].setVelocity(MAX_SPEED - 1d);
     }
 
     public void goBackward() {
@@ -344,8 +456,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         if (angle < 0)
             sign = -1;
 
-        System.out.println("Nykyinen kulkusuunta on "+Math.round(startDir)+" astetta.");
-        System.out.println("Käännös "+ Math.round(angle)+ " astetta.");
+        System.out.println("Nykyinen kulkusuunta on " + Math.round(startDir) + " astetta.");
+        System.out.println("Käännös " + Math.round(angle) + " astetta.");
 
         // Tehdään kompassikäännös.
 
@@ -370,9 +482,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         stop();
         step();
 
-        System.out.println("Uusi kulkusuunta on "+Math.round(getBearingInDegrees())+" astetta.");
+        System.out.println("Uusi kulkusuunta on " + Math.round(getBearingInDegrees()) + " astetta.");
     }
-
 
 
     /**
@@ -443,8 +554,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             if (table[i][j] != 1) {
                 table[i][j] = 1;
                 modCount++;
-            }
-            else
+            } else
                 wasAlreadyCleaned = true;
 
             if (i - 1 >= 0) {
@@ -551,13 +661,13 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             int j1 = target[1];
 
             // Lasketaan suunta.
-            double direction = ( -Math.atan2(i0-i1, j1-j0) + Math.PI/2 ) * 180 / Math.PI;
+            double direction = (-Math.atan2(i0 - i1, j1 - j0) + Math.PI / 2) * 180 / Math.PI;
 
             if (direction < 0)
                 direction += 360;
 
-            System.out.println("Nykyinen indeksi on: ["+i0+", "+j0+"]. " +
-                    "Lähin likainen alue löytyy indeksistä: ["+i1+", "+j1+"].");
+            System.out.println("Nykyinen indeksi on: [" + i0 + ", " + j0 + "]. " +
+                    "Lähin likainen alue löytyy indeksistä: [" + i1 + ", " + j1 + "].");
 
             return direction;
         }
@@ -609,4 +719,18 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
     }
 
+    /**
+     * Start = aloitus
+     * Edges = reunojen siivous
+     * Center = iterointi kohti keskustaa, kjeh keskusta :D
+     * Seek = Jäljelläolevien likaisten kohtien etsiminen
+     * Done = siivottu
+     */
+    enum State {
+        START,
+        EDGES,
+        CENTER,
+        SEEK,
+        DONE
+    }
 }
