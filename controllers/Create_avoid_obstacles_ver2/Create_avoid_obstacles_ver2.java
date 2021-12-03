@@ -137,13 +137,17 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
         passiveWait(0.5);
 
-        double dir = 90;
+        double dir = 90.0;
+        boolean lastWasLeft = false;  // apumuuttuja CENTER-vaiheeseen
 
         //lähetääs ajelee
         while (tableMap.getCurrentProgress() < 95) {
 
+            boolean alreadyCleaned = false;
+
             // Päivitetään siivouskirjanpito
-            boolean alreadyCleaned = tableMap.addLocation(getGPSLocation());
+            if (!tila.equals(State.START))
+                alreadyCleaned = tableMap.addLocation(getGPSLocation());
 
             if (alreadyCleaned)
                 alreadyCleanedCounter++;
@@ -161,6 +165,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
                 continue;
             }*/
+
 
             switch (tila) {
                 case START: {
@@ -193,10 +198,10 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     } else if (isThereACliffAtFrontv2() && isThereACliffAtLeft()) {
                         log();
                         if (dir <= 360.0) {
-                            dir += 90;
+                            dir += 90.0;
                         } else {
                             goBackward();
-                            passiveWait(0.5);
+                            passiveWait(0.8);
                             stop();
                             changeState(State.CENTER);
                             break;
@@ -209,7 +214,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                         log();
                         System.out.println("Left obstacle detected");
                         goBackward();
-                        passiveWait(0.1);
+                        passiveWait(0.5);
                         //turn(-Math.PI / 12);
                         goForward();
 
@@ -230,6 +235,46 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     break;
                 }
                 case CENTER: {
+
+                    double toDirty = tableMap.getAngleToDirty(getGPSLocation(), getBearingInDegrees());
+                    log();
+
+                    if ((int)toDirty == 500) {  // virhekoodi
+                        System.out.println("Kulman laskenta ei onnistunut.");
+                        goBackward();
+                        passiveWait(0.5);
+                        stop();
+
+                        // Otetaan pientä kaartoa vuoroin oikealle ja vuoroin vasemmalle.
+                        if (lastWasLeft) {
+                            goSlightlyRight();
+                            lastWasLeft = false;
+                            passiveWait(0.4);
+                        }
+                        else {
+                            goSlightlyLeft();
+                            lastWasLeft = true;
+                            passiveWait(0.2);
+                        }
+
+                        // TODO jollain kriteerillä tilan vaihto viimeistelyyn
+
+                        break;
+                    }
+                    else
+                        goForward();
+
+                    double direction = getBearingInDegrees();
+
+                    System.out.println("Ajosuunta "+direction+", lian suunta "+toDirty);
+
+                    if (direction < toDirty-11.25 || direction > toDirty+11.25) {
+                        System.out.println("Korjataan suuntaa.");
+                        turnToDirection(toDirty);
+                        goForward();
+                        passiveWait(0.2);
+                    }
+
                     break;
                 }
                 case SEEK:
@@ -289,8 +334,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         System.out.println("Tila: " + tila);
         System.out.println("Puhdistettu: " + tableMap.getCleaningPercentage() + " %");
         System.out.println("Muutos edelliseen: " + tableMap.getChange() + " %-yksikköä");
-        System.out.println("Lähin likainen alue löytyy indeksistä: " +
-                Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
+        // System.out.println("Lähin likainen alue löytyy indeksistä: " +
+        //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
         //System.out.println("---");
         //System.out.println("LOG");
         System.out.println("Direction: " + getBearingInDegrees());
@@ -697,6 +742,88 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         public double getCurrentProgress() {
             return currentProgress;
         }
+
+
+        /**
+         * Lasketaan kartan avulla, paljonko on kulma likaisen alueen reunaan.
+         * Nykyistä kulkusuuntaan käytetään haussa apuna.
+         * Haku kohdistuu vain hieman vasemmalle ja enemmän oikealle.
+         *
+         * @param coords
+         * @param heading
+         * @return
+         */
+        public double getAngleToDirty(double[] coords, double heading) {
+            //robotin indeksi
+            int j = (int) Math.round((x0 + coords[0]) * 10);
+            int i = (int) Math.round((y0 + coords[1]) * 10);
+
+            // Tarkastellaan robotin lähiympäristöä kartasta.
+            short[] clean = new short[16];
+            clean[0] = getValue(i-3, j);
+            clean[1] = getValue(i-3,j+1);
+            clean[2] = getValue(i-2,j+2);
+            clean[3] = getValue(i-1,j+3);
+            clean[4] = getValue(i,j+3);
+            clean[5] = getValue(i+1,j+3);
+            clean[6] = getValue(i+2, j+2);
+            clean[7] = getValue(i+3,j+1);
+            clean[8] = getValue(i+3,j);
+            clean[9] = getValue(i+3,j-1);
+            clean[10] = getValue(i+2,j-2);
+            clean[11] = getValue(i+1,j-3);
+            clean[12] = getValue(i,j-3);
+            clean[13] = getValue(i-1,j-3);
+            clean[14] = getValue(i-2,j-2);
+            clean[15] = getValue(i-3,j-1);
+
+            // Lasketaan robotin kulkusuunnan mukainen indeksi - 2.
+            int startInd = (int) Math.round(heading/22.5) - 2;
+            if (startInd < 0)
+                startInd += clean.length;
+
+            // Aloitetaan robotin kulkusuunnan mukaisesta indeksistä - 2.
+            if (clean[startInd] == 1) {
+                // Tarkistetaan seuraavat 10 oikealle.
+                int ind = 1;
+
+                while (ind <= 10) {
+                    if (startInd+ind < clean.length) {
+                        if (clean[startInd+ind] == 0)
+                            return (startInd+ind)*22.5;
+                    }
+                    else {  // Otetaan taulukon epäjatkuvuuskohta huomioon.
+                        if (clean[startInd+ind-clean.length] == 0)
+                            return (startInd+ind-clean.length)*22.5;
+                    }
+                    ++ind;
+                }
+            }
+
+            // Ei löydetty muutoskohtaa.
+            return 500;  // Palautetaan virhekoodi.
+
+        }
+
+
+        /**
+         * Haetaan kartalta indeksien mukainen arvo raja-arvot tarkistaen.
+         * Jos sijaintia ei ole kartalla, palautetaan 1.
+         *
+         * @param i
+         * @param j
+         * @return
+         */
+        private short getValue(int i, int j) {
+            if (i >= 0 && i < table.length) {
+
+                if (j >= 0 && j < table[i].length)
+                    return table[i][j];
+
+            }
+            return 1;
+        }
+
 
         /**
          * Taulukon tulostus merkkijonoksi.
