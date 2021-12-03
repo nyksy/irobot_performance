@@ -138,7 +138,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         passiveWait(0.5);
 
         double dir = 90.0;
-        boolean lastWasLeft = false;  // apumuuttuja CENTER-vaiheeseen
+        int errorCounter = 0;  // apumuuttuja CENTER-vaiheeseen
 
         //lähetääs ajelee
         while (tableMap.getCurrentProgress() < 95) {
@@ -153,18 +153,6 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 alreadyCleanedCounter++;
             else
                 alreadyCleanedCounter = 0;
-            /*
-            // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
-            if (alreadyCleanedCounter > 200) {
-                alreadyCleanedCounter = 0;
-
-                // ...otetaan uusi suunta likaa kohti.
-                double direction = tableMap.getDirectionToClosestDirty(getGPSLocation());
-                System.out.println("Otetaan uusi suunta likaa kohti: " + Math.round(direction));
-                turnToDirection(direction);
-
-                continue;
-            }*/
 
 
             switch (tila) {
@@ -240,29 +228,31 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     log();
 
                     if ((int)toDirty == 500) {  // virhekoodi
+                        ++errorCounter;
                         System.out.println("Kulman laskenta ei onnistunut.");
                         goBackward();
                         passiveWait(0.5);
                         stop();
 
-                        // Otetaan pientä kaartoa vuoroin oikealle ja vuoroin vasemmalle.
-                        if (lastWasLeft) {
-                            goSlightlyRight();
-                            lastWasLeft = false;
-                            passiveWait(0.4);
-                        }
-                        else {
-                            goSlightlyLeft();
-                            lastWasLeft = true;
-                            passiveWait(0.2);
+                        if (errorCounter > 3) {
+                            System.out.println("Kääntöyritys.");
+                            turn(-0.25);  // kääntöä vasemmalle
+                            goForward();
+                            passiveWait(0.5);
                         }
 
-                        // TODO jollain kriteerillä tilan vaihto viimeistelyyn
+                        if (errorCounter > 8) {
+                            changeState(State.SEEK);
+                            // TODO Tämä siirtymäehto ei ole vielä riittävä.
+                            // Robotti voi jäädä samaan paikkaan pyörimään.
+                        }
 
                         break;
                     }
-                    else
+                    else {
+                        errorCounter = 0;
                         goForward();
+                    }
 
                     double direction = getBearingInDegrees();
 
@@ -278,6 +268,45 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     break;
                 }
                 case SEEK:
+
+                    // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
+                    if (alreadyCleanedCounter > 200) {
+                        alreadyCleanedCounter = 0;
+
+                        // ...otetaan uusi suunta likaa kohti.
+                        double direction = tableMap.getDirectionToClosestDirty(getGPSLocation());
+                        System.out.println("Otetaan uusi suunta likaa kohti: " + Math.round(direction));
+                        turnToDirection(direction);
+
+                        break;
+                    }
+
+                    if (isThereAVirtualWall()) {
+                        System.out.println("Virtual wall detected");
+                    } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
+                        System.out.println("Left obstacle detected");
+                        log();
+
+                        goBackward();
+                        passiveWait(0.5);
+
+                        // Arvotaan käännös oikealle 90 - 180 astetta.
+                        turn(-Math.PI / 2 * (1 + randdouble()));
+
+                    } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
+                        System.out.println("Right obstacle detected");
+                        log();
+
+                        goBackward();
+                        passiveWait(0.5);
+
+                        // Arvotaan käännös vasemmalle 90 - 180 astetta.
+                        turn(Math.PI / 2 * (1 + randdouble()));
+
+                    } else {
+                        goForward();
+                    }
+
                     break;
                 case DONE:
                     break;
@@ -285,32 +314,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     break;
             }
 
-            /*
-            if (isThereAVirtualWall()) {
-                System.out.println("Virtual wall detected");
-            } else if (isThereCollisionAtLeft() || isThereACliffAtLeft()) {
-                System.out.println("Left obstacle detected");
-                log();
 
-                goBackward();
-                passiveWait(0.5);
-
-                // Arvotaan käännös oikealle 90 - 180 astetta.
-                turn(-Math.PI / 2 * (1 + randdouble()));
-
-            } else if (isThereCollisionAtRight() || isThereACliffAtRight() || isThereACliffAtFront()) {
-                System.out.println("Right obstacle detected");
-                log();
-
-                goBackward();
-                passiveWait(0.5);
-
-                // Arvotaan käännös vasemmalle 90 - 180 astetta.
-                turn(Math.PI / 2 * (1 + randdouble()));
-
-            } else {
-                goForward();
-            }*/
             fflushIrReceiver();
             step(getTimeStep());
         }
@@ -585,7 +589,6 @@ public class Create_avoid_obstacles_ver2 extends Robot {
          * @return wasAlreadyCleaned
          */
         public boolean addLocation(double[] coords) {
-            boolean wasAlreadyCleaned = false;
 
             double x = coords[0];
             double y = coords[1];
@@ -593,41 +596,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             int i = (int) Math.round((y0 + y) * 10);
             int j = (int) Math.round((x0 + x) * 10);
 
-
             // Asetetaan arvo ykköseksi ko. ruudussa ja viereisissä ruuduissa.
-
-            if (table[i][j] != 1) {
-                table[i][j] = 1;
-                modCount++;
-            } else
-                wasAlreadyCleaned = true;
-
-            if (i - 1 >= 0) {
-                //tarkistetaan onko jo 1
-                if (table[i - 1][j] != 1) {
-                    table[i - 1][j] = 1;
-                    modCount++;
-                }
-                if (j - 1 >= 0) {
-                    if (table[i - 1][j - 1] != 1) {
-                        table[i - 1][j - 1] = 1;
-                        modCount++;
-                    }
-                }
-            }
-
-            if (i + 1 < table.length) {
-                if (table[i + 1][j] != 1) {
-                    table[i + 1][j] = 1;
-                    modCount++;
-                }
-                if (j + 1 < table[i + 1].length) {
-                    if (table[i + 1][j + 1] != 1) {
-                        table[i + 1][j + 1] = 1;
-                        modCount++;
-                    }
-                }
-            }
+            boolean wasAlreadyCleaned  = !setValue(i, j);
+            setValue(i, j+1);
+            setValue(i-1, j);
+            setValue(i, j-1);
+            setValue(i+1, j);
 
             return wasAlreadyCleaned;
         }
@@ -803,6 +777,32 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             // Ei löydetty muutoskohtaa.
             return 500;  // Palautetaan virhekoodi.
 
+        }
+
+
+        /**
+         * Asetetaan indeksien mukaisen kartan solun arvo ykköseksi, jos se on kartalla.
+         * Palautetaan true, jos muutos tehtiin.
+         *
+         * @param i
+         * @param j
+         */
+        private boolean setValue(int i, int j) {
+
+            // Tarkistetaan lukualueet.
+            if (i >= 0 && i < table.length) {
+                if (j >= 0 && j < table[i].length) {
+
+                    // Onko arvo 1?
+                    if (table[i][j] != 1) {
+                        table[i][j] = 1;
+                        ++modCount;
+                        return true;
+                    }
+
+                }
+            }
+            return false;
         }
 
 
