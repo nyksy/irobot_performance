@@ -77,6 +77,9 @@ public class Ground_java {
             if (time + DELAY < supervisor.getTime()) {
                 time = supervisor.getTime();
 
+
+                System.out.println(Double.toString(supervisor.getTime()).split("\\.")[0]);
+
                 data.add(new String[]{
                         Double.toString(supervisor.getTime()).split("\\.")[0],
                         df.format(getVelocityFromVector(mybot.getVelocity())),
