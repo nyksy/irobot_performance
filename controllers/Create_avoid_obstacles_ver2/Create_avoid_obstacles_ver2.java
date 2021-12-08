@@ -6,11 +6,21 @@
 
 import com.cyberbotics.webots.controller.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.text.DecimalFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Create_avoid_obstacles_ver2 extends Robot {
 
     static State tila = null;
+
+    private static final DecimalFormat df = new DecimalFormat("0.000");
+
+    //delay tulostusten välissä sekunteina
+    static final int DELAY = 1;
 
     static final double DEG_90 = Math.PI / 2.0;
 
@@ -133,6 +143,13 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
         System.out.println("Robot: " + robot.getModel());
 
+        List<String[]> data = new ArrayList<>();
+        //otsikkorivi
+        data.add(new String[]{"time", "cleaning"});
+
+        //long time = System.currentTimeMillis();
+        double time = robot.getTime();
+
         leds[LED_ON].set(1);
 
         passiveWait(0.5);
@@ -227,7 +244,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     double toDirty = tableMap.getAngleToDirty(getGPSLocation(), getBearingInDegrees());
                     log();
 
-                    if ((int)toDirty == 500) {  // virhekoodi
+                    if ((int) toDirty == 500) {  // virhekoodi
                         ++errorCounter;
                         System.out.println("Kulman laskenta ei onnistunut.");
                         goBackward();
@@ -248,17 +265,16 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                         }
 
                         break;
-                    }
-                    else {
+                    } else {
                         errorCounter = 0;
                         goForward();
                     }
 
                     double direction = getBearingInDegrees();
 
-                    System.out.println("Ajosuunta "+direction+", lian suunta "+toDirty);
+                    System.out.println("Ajosuunta " + direction + ", lian suunta " + toDirty);
 
-                    if (direction < toDirty-11.25 || direction > toDirty+11.25) {
+                    if (direction < toDirty - 11.25 || direction > toDirty + 11.25) {
                         System.out.println("Korjataan suuntaa.");
                         turnToDirection(toDirty);
                         goForward();
@@ -315,8 +331,29 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             }
 
 
+            if (time + DELAY < robot.getTime()) {
+                time = robot.getTime();
+
+                data.add(new String[]{
+                        Double.toString(robot.getTime()).split("\\.")[0],
+                        df.format(tableMap.getCurrentProgress()),
+                });
+
+                //TODO tähän jokin ehto, jolla tunnistetaan että robotti lopettanut
+                if (robot.getTime() > 700) {
+                    break;
+                }
+            }
+
+
             fflushIrReceiver();
             step(getTimeStep());
+        }
+
+        try {
+            CSVUtils.writeToCSVFile(data, "cleaning.csv");
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
         }
     }
 
@@ -597,11 +634,11 @@ public class Create_avoid_obstacles_ver2 extends Robot {
             int j = (int) Math.round((x0 + x) * 10);
 
             // Asetetaan arvo ykköseksi ko. ruudussa ja viereisissä ruuduissa.
-            boolean wasAlreadyCleaned  = !setValue(i, j);
-            setValue(i, j+1);
-            setValue(i-1, j);
-            setValue(i, j-1);
-            setValue(i+1, j);
+            boolean wasAlreadyCleaned = !setValue(i, j);
+            setValue(i, j + 1);
+            setValue(i - 1, j);
+            setValue(i, j - 1);
+            setValue(i + 1, j);
 
             return wasAlreadyCleaned;
         }
@@ -734,25 +771,25 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             // Tarkastellaan robotin lähiympäristöä kartasta.
             short[] clean = new short[16];
-            clean[0] = getValue(i-3, j);
-            clean[1] = getValue(i-3,j+1);
-            clean[2] = getValue(i-2,j+2);
-            clean[3] = getValue(i-1,j+3);
-            clean[4] = getValue(i,j+3);
-            clean[5] = getValue(i+1,j+3);
-            clean[6] = getValue(i+2, j+2);
-            clean[7] = getValue(i+3,j+1);
-            clean[8] = getValue(i+3,j);
-            clean[9] = getValue(i+3,j-1);
-            clean[10] = getValue(i+2,j-2);
-            clean[11] = getValue(i+1,j-3);
-            clean[12] = getValue(i,j-3);
-            clean[13] = getValue(i-1,j-3);
-            clean[14] = getValue(i-2,j-2);
-            clean[15] = getValue(i-3,j-1);
+            clean[0] = getValue(i - 3, j);
+            clean[1] = getValue(i - 3, j + 1);
+            clean[2] = getValue(i - 2, j + 2);
+            clean[3] = getValue(i - 1, j + 3);
+            clean[4] = getValue(i, j + 3);
+            clean[5] = getValue(i + 1, j + 3);
+            clean[6] = getValue(i + 2, j + 2);
+            clean[7] = getValue(i + 3, j + 1);
+            clean[8] = getValue(i + 3, j);
+            clean[9] = getValue(i + 3, j - 1);
+            clean[10] = getValue(i + 2, j - 2);
+            clean[11] = getValue(i + 1, j - 3);
+            clean[12] = getValue(i, j - 3);
+            clean[13] = getValue(i - 1, j - 3);
+            clean[14] = getValue(i - 2, j - 2);
+            clean[15] = getValue(i - 3, j - 1);
 
             // Lasketaan robotin kulkusuunnan mukainen indeksi - 2.
-            int startInd = (int) Math.round(heading/22.5) - 2;
+            int startInd = (int) Math.round(heading / 22.5) - 2;
             if (startInd < 0)
                 startInd += clean.length;
 
@@ -762,13 +799,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                 int ind = 1;
 
                 while (ind <= 10) {
-                    if (startInd+ind < clean.length) {
-                        if (clean[startInd+ind] == 0)
-                            return (startInd+ind)*22.5;
-                    }
-                    else {  // Otetaan taulukon epäjatkuvuuskohta huomioon.
-                        if (clean[startInd+ind-clean.length] == 0)
-                            return (startInd+ind-clean.length)*22.5;
+                    if (startInd + ind < clean.length) {
+                        if (clean[startInd + ind] == 0)
+                            return (startInd + ind) * 22.5;
+                    } else {  // Otetaan taulukon epäjatkuvuuskohta huomioon.
+                        if (clean[startInd + ind - clean.length] == 0)
+                            return (startInd + ind - clean.length) * 22.5;
                     }
                     ++ind;
                 }
@@ -859,5 +895,41 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         CENTER,
         SEEK,
         DONE
+    }
+
+    static class CSVUtils {
+
+        private CSVUtils() {
+        }
+
+        /**
+         * Lista merkkijonotaulukoita csv-tiedostoksi
+         *
+         * @param lines datalista
+         */
+        public static void writeToCSVFile(List<String[]> lines, String filename) throws IOException {
+            //luodaan tiedosto
+            File csvOutput = new File(filename);
+
+            //kirjoitetaan
+            try (PrintWriter pw = new PrintWriter(csvOutput)) {
+                lines.stream()
+                        .map(CSVUtils::convertLineToCSV)
+                        .forEach(pw::println);
+            }
+        }
+
+        /**
+         * Muunnetaan merkkijonotaulukko csv-riviksi
+         *
+         * @param data taulukko
+         * @return csv-rivi merkkijonomuotoisena
+         */
+        public static String convertLineToCSV(String[] data) {
+            return Arrays.stream(data)
+                    .map(element -> element.replace(",", "."))
+                    .collect(Collectors.joining(","));
+        }
+
     }
 }

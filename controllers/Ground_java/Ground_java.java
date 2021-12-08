@@ -78,7 +78,7 @@ public class Ground_java {
                 time = supervisor.getTime();
 
                 data.add(new String[]{
-                        df.format(supervisor.getTime()),
+                        Double.toString(supervisor.getTime()).split("\\.")[0],
                         df.format(getVelocityFromVector(mybot.getVelocity())),
                         df.format(translationField.getSFVec3f()[0]),
                         df.format(translationField.getSFVec3f()[2]),
@@ -111,7 +111,7 @@ public class Ground_java {
 
         //kirjaillaan data tiedostoon
         try {
-            CSVUtils.writeToCSVFile(data);
+            CSVUtils.writeToCSVFile(data, "export.csv");
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -129,9 +129,9 @@ public class Ground_java {
          *
          * @param lines datalista
          */
-        public static void writeToCSVFile(List<String[]> lines) throws IOException {
+        public static void writeToCSVFile(List<String[]> lines, String filename) throws IOException {
             //luodaan tiedosto
-            File csvOutput = new File("export.csv");
+            File csvOutput = new File(filename);
 
             //kirjoitetaan
             try (PrintWriter pw = new PrintWriter(csvOutput)) {
