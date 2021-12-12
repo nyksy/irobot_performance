@@ -88,7 +88,7 @@ public class Ground_java {
                 });
 
                 //TODO tähän jokin ehto, jolla tunnistetaan että robotti lopettanut
-                if (supervisor.getTime() > 600) {
+                if (supervisor.getTime() > 1500) {
                     break;
                 }
 
@@ -114,7 +114,7 @@ public class Ground_java {
 
         //kirjaillaan data tiedostoon
         try {
-            CSVUtils.writeToCSVFile(data, "export.csv");
+            CSVUtils.writeToCSVFile(data, "export_basic.csv");
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }

@@ -12,7 +12,7 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 DEF IROBOT_CREATE Create {
-  controller "Create_avoid_obstacles_ver2"
+  controller "Create_avoid_obstacles_ver1"
   bodySlot [
     Compass {
     }
