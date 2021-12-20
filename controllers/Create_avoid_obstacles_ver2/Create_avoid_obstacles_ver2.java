@@ -260,8 +260,6 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
                         if (errorCounter > 8) {
                             changeState(State.SEEK);
-                            // TODO Tämä siirtymäehto ei ole vielä riittävä.
-                            // Robotti voi jäädä samaan paikkaan pyörimään.
                         }
 
                         break;
@@ -272,7 +270,24 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
                     double direction = getBearingInDegrees();
 
-                    System.out.println("Ajosuunta " + direction + ", lian suunta " + toDirty);
+
+                    // Tarkistetaan, onko käännöstarve yli 170 astetta.
+                    double angle = toDirty - direction;
+
+                    if (angle < -180)
+                        angle += 360;
+
+                    if (angle > 180)
+                        angle -= 360;
+
+                    if (Math.abs(angle) > 170) {
+                        System.out.println("Siirrytään viimeistelyvaiheeseen.");
+                        changeState(State.SEEK);
+                        break;
+                    }
+
+
+                    System.out.println("Lian suunta: " + toDirty);
 
                     if (direction < toDirty - 11.25 || direction > toDirty + 11.25) {
                         System.out.println("Korjataan suuntaa.");
@@ -284,6 +299,8 @@ public class Create_avoid_obstacles_ver2 extends Robot {
                     break;
                 }
                 case SEEK:
+
+                    log();
 
                     // Jos ollaan liikuttu liian pitkään siivoamattomalla alueella,...
                     if (alreadyCleanedCounter > 200) {
@@ -379,7 +396,7 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         //        Arrays.toString(tableMap.getClosestZero(getGPSLocation())));
         //System.out.println("---");
         //System.out.println("LOG");
-        System.out.println("Direction: " + getBearingInDegrees());
+        System.out.println("Ajosuunta: " + Math.round(getBearingInDegrees()*100.0)/100.0);
         //System.out.println("GPS vector: " + Arrays.toString(gps.getValues()));
         //System.out.println("GPS speed: " + String.format("%.4f", gps.getSpeed()) + " m/s");
         //System.out.println("Compass values: " + Arrays.toString(compass.getValues()));
@@ -548,10 +565,12 @@ public class Create_avoid_obstacles_ver2 extends Robot {
         // Tehdään kompassikäännös.
 
         double turned = 0;
+        double prev = 0;
         stop();
         step();
         motors[MOTOR_LEFT].setVelocity(-sign * HALF_SPEED);
         motors[MOTOR_RIGHT].setVelocity(sign * HALF_SPEED);
+
 
         do {
             step();
@@ -562,6 +581,11 @@ public class Create_avoid_obstacles_ver2 extends Robot {
 
             if (turned > 180)
                 turned -= 360;
+
+            if (Math.abs(turned) < prev)  // Mentiin todennäköisesti jo yli puoli kierrosta!
+                break;
+
+            prev = Math.abs(turned);
 
         } while (Math.abs(turned) < Math.abs(angle));
 
